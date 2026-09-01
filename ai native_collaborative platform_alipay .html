@@ -1,0 +1,2172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>今日宜 AIGC · 工作台看板（离线快照）</title>
+<style>
+  :root {
+    --bg: #f7f8fa; --card: #ffffff; --border: #e3e6eb;
+    --text: #1a1a1a; --muted: #6b7280; --accent: #2563eb;
+    --green: #16a34a; --amber: #d97706; --red: #dc2626;
+    --code-bg: #f1f3f5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+         background: var(--bg); color: var(--text); line-height: 1.6; }
+  header { background: var(--card); border-bottom: 1px solid var(--border);
+           padding: 14px 28px; position: sticky; top: 0; z-index: 10; }
+  header h1 { font-size: 17px; font-weight: 600; display: inline-block; }
+  header nav { display: inline-block; margin-left: 32px; }
+  header nav a { color: var(--muted); text-decoration: none; margin-right: 20px;
+                 font-size: 14px; padding-bottom: 2px; border-bottom: 2px solid transparent; }
+  header nav a:hover { color: var(--text); }
+  header nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .container { max-width: 1200px; margin: 0 auto; padding: 28px; }
+  h2 { font-size: 20px; margin-bottom: 16px; }
+  h3 { font-size: 16px; margin: 20px 0 10px; }
+  .card { background: var(--card); border: 1px solid var(--border);
+          border-radius: 8px; padding: 20px; margin-bottom: 16px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .stat { display: inline-block; background: var(--code-bg); padding: 2px 10px;
+          border-radius: 4px; font-size: 13px; margin-right: 8px; color: var(--muted); }
+  .stat b { color: var(--text); }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 10px;
+           font-size: 12px; font-weight: 500; }
+  .badge-green { background: #dcfce7; color: var(--green); }
+  .badge-amber { background: #fef3c7; color: var(--amber); }
+  .badge-red { background: #fee2e2; color: var(--red); }
+  .badge-blue { background: #dbeafe; color: var(--accent); }
+  .file-list { list-style: none; }
+  .file-list li { padding: 6px 0; border-bottom: 1px solid var(--border);
+                  font-size: 14px; display: flex; justify-content: space-between; }
+  .file-list li:last-child { border-bottom: none; }
+  .file-list a { color: var(--accent); text-decoration: none; }
+  .file-list a:hover { text-decoration: underline; }
+  pre { background: var(--code-bg); padding: 16px; border-radius: 6px;
+        overflow-x: auto; font-size: 13px; line-height: 1.5;
+        font-family: "SF Mono", "Menlo", monospace; white-space: pre-wrap; }
+  .empty { color: var(--muted); font-style: italic; font-size: 14px; }
+  .commit { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .commit .hash { font-family: monospace; color: var(--accent); font-size: 13px; min-width: 70px; }
+  .commit .meta { font-size: 12px; color: var(--muted); }
+  .commit .subject { font-size: 14px; }
+  .member-card { cursor: pointer; transition: box-shadow .15s; }
+  .member-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+  .member-card h3 { margin-top: 0; }
+  .member-card .role { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+  a { color: var(--accent); }
+  .back { font-size: 14px; margin-bottom: 16px; display: inline-block; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>今日宜 AIGC · 多人协同工作台看板</h1>
+  <nav id="topnav">
+    <a href="#view-index" data-view="view-index">区域地图</a>
+    <a href="#view-inbox" data-view="view-inbox">收件箱</a>
+    <a href="#view-effective" data-view="view-effective">生效版本</a>
+    <a href="#view-history" data-view="view-history">历史版本</a>
+    <a href="#view-logs" data-view="view-logs">日志</a>
+    <a href="#view-timeline" data-view="view-timeline">提交时间线</a>
+    <a href="#view-member-alice" data-view="view-member-alice">alice</a>
+    <a href="#view-member-bob" data-view="view-member-bob">bob</a>
+    <a href="#view-member-carol" data-view="view-member-carol">carol</a>
+    <a href="#view-member-dave" data-view="view-member-dave">dave</a>
+  </nav>
+</header>
+<div class="container">
+<section class="view" id="view-index" style="display:none">
+  
+<h2>区域地图</h2>
+
+<h3>公共区</h3>
+<div class="grid">
+  <div class="card">
+    <h3>📋 项目共识 <span class="stat">维护人: alice</span></h3>
+    <ul class="file-list">
+      
+      <li><a href="#file-public__consensus__glossary.md">glossary.md</a></li>
+      
+      <li><a href="#file-public__consensus__project-scope.md">project-scope.md</a></li>
+      
+      <li><a href="#file-public__consensus__rules.md">rules.md</a></li>
+      
+    </ul>
+  </div>
+  <div class="card">
+    <h3>📝 协作契约 <span class="stat">全员共守</span></h3>
+    <ul class="file-list">
+      
+      <li><a href="#file-public__contract__division.md">division.md</a></li>
+      
+      <li><a href="#file-public__contract__protocol.md">protocol.md</a></li>
+      
+    </ul>
+  </div>
+</div>
+
+<h3>成员区</h3>
+<div class="grid-4">
+  
+  <div class="card member-card" onclick="location.hash='#view-member-alice'">
+    <h3>alice</h3>
+    <div class="role">今日宜产品（本人）· 用户动线与三层内容供给</div>
+    <div>
+      <span class="stat">收件箱 <b>2</b></span>
+      <span class="stat">草稿 <b>2</b></span>
+    </div>
+    <div style="margin-top:6px">
+      <span class="stat">生效 <b>1</b></span>
+      <span class="stat">历史 <b>1</b></span>
+      <span class="stat">日志 <b>1</b></span>
+    </div>
+  </div>
+  
+  <div class="card member-card" onclick="location.hash='#view-member-bob'">
+    <h3>bob</h3>
+    <div class="role">设计 · 文生氛围图Skill与素材视觉标准</div>
+    <div>
+      <span class="stat">收件箱 <b>1</b></span>
+      <span class="stat">草稿 <b>0</b></span>
+    </div>
+    <div style="margin-top:6px">
+      <span class="stat">生效 <b>0</b></span>
+      <span class="stat">历史 <b>0</b></span>
+      <span class="stat">日志 <b>1</b></span>
+    </div>
+  </div>
+  
+  <div class="card member-card" onclick="location.hash='#view-member-carol'">
+    <h3>carol</h3>
+    <div class="role">服务端&amp;后台开发 · AIGC Pipeline与数据看板</div>
+    <div>
+      <span class="stat">收件箱 <b>1</b></span>
+      <span class="stat">草稿 <b>0</b></span>
+    </div>
+    <div style="margin-top:6px">
+      <span class="stat">生效 <b>0</b></span>
+      <span class="stat">历史 <b>0</b></span>
+      <span class="stat">日志 <b>1</b></span>
+    </div>
+  </div>
+  
+  <div class="card member-card" onclick="location.hash='#view-member-dave'">
+    <h3>dave</h3>
+    <div class="role">质量 · 素材审核与Pipeline产出验收</div>
+    <div>
+      <span class="stat">收件箱 <b>0</b></span>
+      <span class="stat">草稿 <b>0</b></span>
+    </div>
+    <div style="margin-top:6px">
+      <span class="stat">生效 <b>0</b></span>
+      <span class="stat">历史 <b>0</b></span>
+      <span class="stat">日志 <b>0</b></span>
+    </div>
+  </div>
+  
+</div>
+
+<h3>最近提交</h3>
+<div class="card">
+  
+  <div class="commit">
+    <span class="hash">923c546</span>
+    <div>
+      <div class="subject">refactor: 全量改造为今日宜AIGC业务内容（角色重定位+素材图标准+模块流转）</div>
+      <div class="meta">alice · 2026-09-01 12:26</div>
+    </div>
+  </div>
+  
+  <div class="commit">
+    <span class="hash">a6afbf8</span>
+    <div>
+      <div class="subject">fix: pre-commit v2.1 修复 macOS bash set -u unbound + 中文文件名解析（配演练2验证）</div>
+      <div class="meta">alice · 2026-08-31 20:27</div>
+    </div>
+  </div>
+  
+  <div class="commit">
+    <span class="hash">655ab19</span>
+    <div>
+      <div class="subject">docs(rules): 清理 rules 尾行误写入x，补第8条第4款关于中文文件名的约束</div>
+      <div class="meta">alice · 2026-08-31 20:11</div>
+    </div>
+  </div>
+  
+  <div class="commit">
+    <span class="hash">a8d2ba8</span>
+    <div>
+      <div class="subject">fix: pre-commit v2 修复中文文件名路径解析（-z NUL 分隔 + 兜底静默通过拦截）</div>
+      <div class="meta">alice · 2026-08-31 20:10</div>
+    </div>
+  </div>
+  
+  <div class="commit">
+    <span class="hash">0694652</span>
+    <div>
+      <div class="subject">review: 答复 alice AIGC后台模块流转方案 — 确认状态触发</div>
+      <div class="meta">carol · 2026-08-31 19:53</div>
+    </div>
+  </div>
+  
+  <div class="commit">
+    <span class="hash">2f81227</span>
+    <div>
+      <div class="subject">deliver: 投 carol AIGC后台模块流转方案确认</div>
+      <div class="meta">alice · 2026-08-31 19:46</div>
+    </div>
+  </div>
+  
+  <div class="commit">
+    <span class="hash">d3a46dc</span>
+    <div>
+      <div class="subject">fix: 清理 alice status 遗留脏标记与 bob 答复文件的代码块围栏</div>
+      <div class="meta">alice · 2026-08-31 19:34</div>
+    </div>
+  </div>
+  
+  <div class="commit">
+    <span class="hash">3c53427</span>
+    <div>
+      <div class="subject">effective: 今日宜素材图标准 v2 — 旧版 v1 已归档至 history</div>
+      <div class="meta">alice · 2026-08-31 19:27</div>
+    </div>
+  </div>
+  
+  <div class="commit">
+    <span class="hash">29bf810</span>
+    <div>
+      <div class="subject">effective: 今日宜素材图标准 v1 — 经 bob 确认生效</div>
+      <div class="meta">alice · 2026-08-31 19:14</div>
+    </div>
+  </div>
+  
+  <div class="commit">
+    <span class="hash">7117482</span>
+    <div>
+      <div class="subject">effective: 今日宜素材图标准 v1 — 经 bob 确认生效</div>
+      <div class="meta">alice · 2026-08-31 18:12</div>
+    </div>
+  </div>
+  
+</div>
+
+</section>
+<section class="view" id="view-inbox" style="display:none">
+  
+<h2>收件箱</h2>
+<p style="color:var(--muted);margin-bottom:16px;font-size:14px">
+  跨区协作唯一入口：把要办的事写成新文件投进对方收件箱，须含三要素（确认什么/建议口径/写回哪里）。
+</p>
+<div class="grid">
+  
+  <div class="card">
+    <h3>alice <span class="badge badge-blue">收件箱</span></h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">今日宜产品（本人）· 用户动线与三层内容供给</div>
+    
+      
+      <div style="margin-bottom:16px">
+        <a href="#file-members__alice__inbox__2026-08-31-bob-今日宜素材图标准答复.md"><b>2026-08-31-bob-今日宜素材图标准答复.md</b></a>
+        <pre># 今日宜素材图标准答复
+
+## 确认结果
+通过。素材图视觉风格标准可行，暖色氛围图 + 24px主题词文案。
+
+## 补充
+&#34;未命中&#34;态建议用文案&#34;今日暂无推荐，明日继续&#34;，不置灰，保持用户期待感。
+配额满后增加&#34;已生成素材 X/Y 张&#34;进度条，只出数量不出百分比。
+
+## 答复写回
+本答复即确认。alice 可将草稿生效。
+</pre>
+      </div>
+      
+      <div style="margin-bottom:16px">
+        <a href="#file-members__alice__inbox__2026-08-31-carol-AIGC后台模块流转答复.md"><b>2026-08-31-carol-AIGC后台模块流转答复.md</b></a>
+        <pre># AIGC后台模块流转答复
+
+## 确认结果
+模块流转以状态触发，确认。后台按预设状态机下发模块流转信号。
+
+## 补充
+素材队列满的情况：AIGC生成提前结束，但审核仍按批次执行。
+C端卡片回显建议：
+- 队列满 → 进度条 100% + &#34;素材生成中，等待审核&#34;
+- 审核完成 → 自动配置上线（仅审核通过的素材进入C端）
+
+模块流转状态由后台下发，C端只读渲染，不自行判断。
+</pre>
+      </div>
+      
+    
+  </div>
+  
+  <div class="card">
+    <h3>bob <span class="badge badge-blue">收件箱</span></h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">设计 · 文生氛围图Skill与素材视觉标准</div>
+    
+      
+      <div style="margin-bottom:16px">
+        <a href="#file-members__bob__inbox__2026-08-31-alice-今日宜素材图标准确认.md"><b>2026-08-31-alice-今日宜素材图标准确认.md</b></a>
+        <pre># 今日宜素材图标准确认
+
+## 需要确认什么
+素材图视觉风格标准（色调、构图比例、文案字号）在今日宜卡片中的呈现方式。
+我建议用暖色氛围图 + 24px主题词文案，请确认是否可行。
+
+## 建议口径
+暖色调氛围图，上方60%图+下方40%文案，主题词24px加粗。
+
+## 确认后写回哪里
+答复请投 members/alice/inbox/2026-08-31-bob-今日宜素材图标准答复.md
+</pre>
+      </div>
+      
+    
+  </div>
+  
+  <div class="card">
+    <h3>carol <span class="badge badge-blue">收件箱</span></h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">服务端&amp;后台开发 · AIGC Pipeline与数据看板</div>
+    
+      
+      <div style="margin-bottom:16px">
+        <a href="#file-members__carol__inbox__2026-08-31-alice-AIGC后台模块流转方案确认.md"><b>2026-08-31-alice-AIGC后台模块流转方案确认.md</b></a>
+        <pre># AIGC后台模块流转方案确认
+
+## 需要确认什么
+AIGC Pipeline从「生成模块」切到「审核模块」的触发条件。
+我的理解：AIGC生成完成后即自动流转到审核队列，与人工干预无关。请确认。
+
+另外：素材队列满后生成提前结束，此时后台如何回显？
+建议：进度条显示100%，文案&#34;素材生成中，等待审核&#34;。
+
+## 建议口径
+- 模块流转以状态触发，由后台状态机下发流转信号
+- 队列满：进度条100% + &#34;素材生成中&#34;文案，审核通过后配置上线
+
+## 确认后写回哪里
+答复请投 members/alice/inbox/2026-08-31-carol-AIGC后台模块流转答复.md
+</pre>
+      </div>
+      
+    
+  </div>
+  
+  <div class="card">
+    <h3>dave <span class="badge badge-blue">收件箱</span></h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">质量 · 素材审核与Pipeline产出验收</div>
+    
+      <p class="empty">收件箱为空</p>
+    
+  </div>
+  
+</div>
+
+</section>
+<section class="view" id="view-effective" style="display:none">
+  
+<h2>生效版本 <span class="badge badge-green">全空间唯一</span></h2>
+<p style="color:var(--muted);margin-bottom:16px;font-size:14px">
+  经人确认后的正式口径。替换前旧版须归档至历史版本。一项工作是否生效，只看有没有经人确认的生效版本。
+</p>
+<div class="grid">
+  
+  <div class="card">
+    <h3>alice</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">今日宜产品（本人）· 用户动线与三层内容供给</div>
+    
+      
+      <div style="margin-bottom:16px">
+        <a href="#file-members__alice__effective__今日宜素材图标准.md"><b>今日宜素材图标准.md</b></a>
+        <pre>&gt; 版本：v2
+&gt; 生效日期：2026-08-31
+&gt; 经 bob 确认通过
+
+# 今日宜素材图标准
+
+## 素材图基本规范
+- 尺寸：750×400 px（搜索结果页卡片位）
+- 风格：与今日宜主题词强相关的氛围图，暖色调为主
+- 构图：上方氛围图占60%，下方文案区占40%
+- 文案：主题词 + 引导语（如&#34;今日宜 · 查收你的专属热点&#34;）
+
+## AIGC生成规范
+- 生图Skill：文生氛围图，按&#34;定目标→立规矩→守规矩&#34;方法论
+- prompt模板：主题词 + 风格描述 + 构图指令
+- 出图数量：每个主题词生成3张候选
+
+## v2 变更
+- &#34;未命中&#34;态文案：今日暂无推荐，明日继续（不置灰）
+- 新增配额条：已生成素材 X/Y 张进度展示
+</pre>
+      </div>
+      
+    
+  </div>
+  
+  <div class="card">
+    <h3>bob</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">设计 · 文生氛围图Skill与素材视觉标准</div>
+    
+      <p class="empty">暂无生效版本</p>
+    
+  </div>
+  
+  <div class="card">
+    <h3>carol</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">服务端&amp;后台开发 · AIGC Pipeline与数据看板</div>
+    
+      <p class="empty">暂无生效版本</p>
+    
+  </div>
+  
+  <div class="card">
+    <h3>dave</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">质量 · 素材审核与Pipeline产出验收</div>
+    
+      <p class="empty">暂无生效版本</p>
+    
+  </div>
+  
+</div>
+
+</section>
+<section class="view" id="view-history" style="display:none">
+  
+<h2>历史版本 <span class="badge badge-amber">只增不删</span></h2>
+<p style="color:var(--muted);margin-bottom:16px;font-size:14px">
+  被替换的旧版原样存档。替换生效版本前必须先归档旧版。
+</p>
+<div class="grid">
+  
+  <div class="card">
+    <h3>alice</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">今日宜产品（本人）· 用户动线与三层内容供给</div>
+    
+    <ul class="file-list">
+      
+      <li><a href="#file-members__alice__history__今日宜素材图标准__2026-08-31_v1.md">今日宜素材图标准/2026-08-31_v1.md</a></li>
+      
+    </ul>
+    
+  </div>
+  
+  <div class="card">
+    <h3>bob</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">设计 · 文生氛围图Skill与素材视觉标准</div>
+    
+      <p class="empty">无历史版本</p>
+    
+  </div>
+  
+  <div class="card">
+    <h3>carol</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">服务端&amp;后台开发 · AIGC Pipeline与数据看板</div>
+    
+      <p class="empty">无历史版本</p>
+    
+  </div>
+  
+  <div class="card">
+    <h3>dave</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">质量 · 素材审核与Pipeline产出验收</div>
+    
+      <p class="empty">无历史版本</p>
+    
+  </div>
+  
+</div>
+
+</section>
+<section class="view" id="view-logs" style="display:none">
+  
+<h2>当天日志</h2>
+<p style="color:var(--muted);margin-bottom:16px;font-size:14px">
+  过程的唯一维护位置。每次工作收尾写当天日志，完成一次 git 提交。只看 git 提交历史，能还原每天做了什么。
+</p>
+<div class="grid">
+  
+  <div class="card">
+    <h3>alice</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">今日宜产品（本人）· 用户动线与三层内容供给</div>
+    
+      
+      <div style="margin-bottom:16px">
+        <a href="#file-members__alice__log__2026-08-31.md"><b>2026-08-31.md</b></a>
+        <pre># alice 2026-08-31 日志
+
+## 今日工作
+- 起草 今日宜素材图标准 v1
+- 投递确认请求到 bob 收件箱（素材视觉规范确认）
+- 今日宜素材图标准 v1 经 bob 确认，生效
+- 今日宜素材图标准 v2
+- 投递确认请求到 carol 收件箱（AIGC后台模块流转方案）
+
+## 提交记录
+- （待填）
+</pre>
+      </div>
+      
+    
+  </div>
+  
+  <div class="card">
+    <h3>bob</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">设计 · 文生氛围图Skill与素材视觉标准</div>
+    
+      
+      <div style="margin-bottom:16px">
+        <a href="#file-members__bob__log__2026-08-31.md"><b>2026-08-31.md</b></a>
+        <pre># bob 2026-08-31 日志
+
+## 今日工作
+- 答复 alice 今日宜素材图标准确认：通过，补充未命中态文案与配额条建议
+
+## 提交记录
+- （待填）
+</pre>
+      </div>
+      
+    
+  </div>
+  
+  <div class="card">
+    <h3>carol</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">服务端&amp;后台开发 · AIGC Pipeline与数据看板</div>
+    
+      
+      <div style="margin-bottom:16px">
+        <a href="#file-members__carol__log__2026-08-31.md"><b>2026-08-31.md</b></a>
+        <pre># carol 2026-08-31 日志
+
+## 今日工作
+- 确认AIGC后台模块流转方案
+
+## 提交记录
+- （待填）
+</pre>
+      </div>
+      
+    
+  </div>
+  
+  <div class="card">
+    <h3>dave</h3>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">质量 · 素材审核与Pipeline产出验收</div>
+    
+      <p class="empty">暂无日志</p>
+    
+  </div>
+  
+</div>
+
+</section>
+<section class="view" id="view-timeline" style="display:none">
+  
+<h2>提交时间线</h2>
+<p style="color:var(--muted);margin-bottom:16px;font-size:14px">
+  谁在什么时间改了什么，仓库历史里都能查到。工作依据只认仓库里的文件。
+</p>
+<div class="card">
+  
+  <table>
+    <thead>
+      <tr><th>提交</th><th>作者</th><th>时间</th><th>说明</th></tr>
+    </thead>
+    <tbody>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">923c546</span></td>
+        <td>alice</td>
+        <td style="color:var(--muted);font-size:13px">2026-09-01 12:26</td>
+        <td>refactor: 全量改造为今日宜AIGC业务内容（角色重定位+素材图标准+模块流转）</td>
+      </tr>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">a6afbf8</span></td>
+        <td>alice</td>
+        <td style="color:var(--muted);font-size:13px">2026-08-31 20:27</td>
+        <td>fix: pre-commit v2.1 修复 macOS bash set -u unbound + 中文文件名解析（配演练2验证）</td>
+      </tr>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">655ab19</span></td>
+        <td>alice</td>
+        <td style="color:var(--muted);font-size:13px">2026-08-31 20:11</td>
+        <td>docs(rules): 清理 rules 尾行误写入x，补第8条第4款关于中文文件名的约束</td>
+      </tr>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">a8d2ba8</span></td>
+        <td>alice</td>
+        <td style="color:var(--muted);font-size:13px">2026-08-31 20:10</td>
+        <td>fix: pre-commit v2 修复中文文件名路径解析（-z NUL 分隔 + 兜底静默通过拦截）</td>
+      </tr>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">0694652</span></td>
+        <td>carol</td>
+        <td style="color:var(--muted);font-size:13px">2026-08-31 19:53</td>
+        <td>review: 答复 alice AIGC后台模块流转方案 — 确认状态触发</td>
+      </tr>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">2f81227</span></td>
+        <td>alice</td>
+        <td style="color:var(--muted);font-size:13px">2026-08-31 19:46</td>
+        <td>deliver: 投 carol AIGC后台模块流转方案确认</td>
+      </tr>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">d3a46dc</span></td>
+        <td>alice</td>
+        <td style="color:var(--muted);font-size:13px">2026-08-31 19:34</td>
+        <td>fix: 清理 alice status 遗留脏标记与 bob 答复文件的代码块围栏</td>
+      </tr>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">3c53427</span></td>
+        <td>alice</td>
+        <td style="color:var(--muted);font-size:13px">2026-08-31 19:27</td>
+        <td>effective: 今日宜素材图标准 v2 — 旧版 v1 已归档至 history</td>
+      </tr>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">29bf810</span></td>
+        <td>alice</td>
+        <td style="color:var(--muted);font-size:13px">2026-08-31 19:14</td>
+        <td>effective: 今日宜素材图标准 v1 — 经 bob 确认生效</td>
+      </tr>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">7117482</span></td>
+        <td>alice</td>
+        <td style="color:var(--muted);font-size:13px">2026-08-31 18:12</td>
+        <td>effective: 今日宜素材图标准 v1 — 经 bob 确认生效</td>
+      </tr>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">db591e0</span></td>
+        <td>bob</td>
+        <td style="color:var(--muted);font-size:13px">2026-08-31 18:05</td>
+        <td>review: 答复 alice 今日宜素材图标准 — 通过</td>
+      </tr>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">50bbc68</span></td>
+        <td>alice</td>
+        <td style="color:var(--muted);font-size:13px">2026-08-31 17:45</td>
+        <td>draft: 今日宜素材图标准 v1 — 待 bob 确认视觉规范</td>
+      </tr>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">9662d3b</span></td>
+        <td>alice</td>
+        <td style="color:var(--muted);font-size:13px">2026-08-31 16:21</td>
+        <td>feat: add pre-commit hook for write constraints (identity↔dir, consensus maintainer)</td>
+      </tr>
+      
+      <tr>
+        <td><span class="hash" style="font-family:monospace;color:var(--accent)">6a6db05</span></td>
+        <td>alice</td>
+        <td style="color:var(--muted);font-size:13px">2026-08-31 16:19</td>
+        <td>init: scaffold workspace — public area + 4 member areas + ai-procedures</td>
+      </tr>
+      
+    </tbody>
+  </table>
+  
+</div>
+
+</section>
+<section class="view" id="view-member-alice" style="display:none">
+  
+<a href="#view-index" class="back">← 返回区域地图</a>
+<h2>alice <span class="badge badge-blue">alice@plus.jd</span></h2>
+<p style="color:var(--muted);margin-bottom:16px">今日宜产品（本人）· 用户动线与三层内容供给</p>
+
+<div class="grid">
+  <div class="card">
+    <h3>📌 状态记录</h3>
+    <pre># alice 状态记录
+
+## 当前进展
+- 2026-08-31 工作台初始化 已生效
+- 2026-08-31 今日宜素材图标准 v1 草稿完成，待 bob 确认视觉规范
+- 2026-08-31 今日宜素材图标准 v1 已生效（经 bob 确认）
+- 2026-08-31 今日宜素材图标准 v2 已生效（旧版 v1 已归档至 history）
+
+## 生效版本清单
+- 今日宜素材图标准.md | 2026-08-31 | v2
+
+## 待确认事项
+（暂无）
+</pre>
+  </div>
+  <div class="card">
+    <h3>🤖 AI 工作规程</h3>
+    <pre># alice 工作规程（AI 读取）
+
+&gt; 角色今日宜产品（本人）。职责：C端今日宜用户动线、产品框架和三层内容供给体系搭建；B端搜索产运后台和今日宜数据看板逻辑。
+
+## 一、开始工作前必读（按顺序）
+1. `public/consensus/project-scope.md` — 项目范围与三层内容供给体系
+2. `public/consensus/rules.md` — 规则口径（生效路径/区域权限/写入约束）
+3. `public/consensus/glossary.md` — 名词约定
+4. `public/contract/division.md` — 分工方案，确认本次协作涉及哪些人
+5. `public/contract/protocol.md` — 协作规则（投递格式/生效动作）
+6. `members/alice/status.md` — 当前进展与生效版本清单
+7. `members/alice/log/` 最新一份 — 上次工作到哪
+8. `members/alice/inbox/` — 有无待处理的协作件
+
+## 二、产出位置
+- 起草：`members/alice/drafts/&lt;主题&gt;-draft-vN.md`
+- 生效：`members/alice/effective/&lt;主题&gt;.md`（仅在人确认后操作）
+- 历史归档：`members/alice/history/&lt;主题&gt;/&lt;日期&gt;_vN.md`
+- 状态更新：`members/alice/status.md`
+- 日志：`members/alice/log/YYYY-MM-DD.md`
+- 跨区投递：投到 `members/&lt;对方&gt;/inbox/`
+
+## 三、alice 专属职责
+- 今日宜C端用户动线设计：前置页→搜索结果页→今日宜卡片的呈现
+- 三层内容供给体系：AIGC生成→审核→配置上线的框架
+- B端搜索产运后台：今日宜配置管理、主题词管理
+- 数据看板：PV/CTR/留存率等指标定义
+- 与 bob 协作：素材视觉标准在产品动线中的呈现
+- 与 carol 协作：AIGC Pipeline模块流转方案、后台开发需求
+- 与 dave 协作：素材产出验收标准
+
+## 四、工作边界（铁律）
+1. 不得在人确认前把 drafts/ 内容写入 effective/
+2. 不得改 members/bob|carol|dave/ 下任何文件；要协作就投对方 inbox
+3. 不得改 public/ 下非 alice 维护的文件
+4. 拿不准的问题，记入 `members/alice/drafts/pending-questions.md`，等人裁决
+5. 起草前先 grep `effective/`，确认是否已有同名生效版本
+
+## 五、遇到需要拍板的问题
+1. 在 `members/alice/drafts/pending-questions.md` 追加问题
+2. 若需他人拍板，投递到对方 inbox，文件名 `YYYY-MM-DD-alice-&lt;事由&gt;.md`
+3. 在 `members/alice/status.md` 标记&#34;待 &lt;某人&gt; 确认&#34;
+4. 问题未答复前，相关草稿不得提请生效
+
+## 六、每次工作收尾
+1. 更新 `members/alice/status.md` 当前进展
+2. 写 `members/alice/log/YYYY-MM-DD.md`（今日工作 + 提交记录）
+3. 以 alice 身份 git commit + push
+4. commit message 格式：`&lt;动作&gt;: &lt;事项&gt; — &lt;结果&gt;`，如 `draft: 今日宜素材图标准 v1 — 待 bob 确认视觉规范`
+</pre>
+  </div>
+</div>
+
+<div class="grid-4" style="margin-top:16px">
+  <div class="card">
+    <h3>📥 收件箱 <span class="stat">2</span></h3>
+    <ul class="file-list">
+      
+      <li><a href="#file-members__alice__inbox__2026-08-31-bob-今日宜素材图标准答复.md">2026-08-31-bob-今日宜素材图标准答复.md</a></li>
+      
+      <li><a href="#file-members__alice__inbox__2026-08-31-carol-AIGC后台模块流转答复.md">2026-08-31-carol-AIGC后台模块流转答复.md</a></li>
+      
+    </ul>
+    
+  </div>
+  <div class="card">
+    <h3>📝 草稿 <span class="stat">2</span></h3>
+    <ul class="file-list">
+      
+      <li><a href="#file-members__alice__drafts__今日宜素材图标准-draft-v1.md">今日宜素材图标准-draft-v1.md</a></li>
+      
+      <li><a href="#file-members__alice__drafts__今日宜素材图标准-draft-v2.md">今日宜素材图标准-draft-v2.md</a></li>
+      
+    </ul>
+    
+  </div>
+  <div class="card">
+    <h3>✅ 生效版本 <span class="stat">1</span></h3>
+    <ul class="file-list">
+      
+      <li><a href="#file-members__alice__effective__今日宜素材图标准.md">今日宜素材图标准.md</a></li>
+      
+    </ul>
+    
+  </div>
+  <div class="card">
+    <h3>📦 历史 <span class="stat">1</span></h3>
+    <ul class="file-list">
+      
+      <li><a href="#file-members__alice__history__今日宜素材图标准__2026-08-31_v1.md">2026-08-31_v1.md</a></li>
+      
+    </ul>
+    
+  </div>
+</div>
+
+<h3>日志</h3>
+<div class="card">
+  <ul class="file-list">
+    
+    <li><a href="#file-members__alice__log__2026-08-31.md">2026-08-31.md</a></li>
+    
+  </ul>
+  
+</div>
+
+</section>
+<section class="view" id="view-member-bob" style="display:none">
+  
+<a href="#view-index" class="back">← 返回区域地图</a>
+<h2>bob <span class="badge badge-blue">bob@plus.jd</span></h2>
+<p style="color:var(--muted);margin-bottom:16px">设计 · 文生氛围图Skill与素材视觉标准</p>
+
+<div class="grid">
+  <div class="card">
+    <h3>📌 状态记录</h3>
+    <pre># bob 状态记录
+
+## 当前进展
+- 2026-08-31 工作台初始化 已生效
+- 2026-08-31 已答复 alice 今日宜素材图标准：通过
+
+## 生效版本清单
+（暂无）
+
+## 待确认事项
+（暂无）
+</pre>
+  </div>
+  <div class="card">
+    <h3>🤖 AI 工作规程</h3>
+    <pre># bob 工作规程（AI 读取）
+
+&gt; 角色：设计。职责：文生氛围图Skill设计、素材视觉标准、AIGC生图方法论（定目标→立规矩→守规矩）。
+
+## 一、开始工作前必读（按顺序）
+1. `public/consensus/project-scope.md` — 项目范围与三层内容供给体系
+2. `public/consensus/rules.md` — 规则口径
+3. `public/consensus/glossary.md` — 名词约定
+4. `public/contract/division.md` — 分工方案（bob 维护此文件）
+5. `public/contract/protocol.md` — 协作规则
+6. `members/bob/status.md` — 当前进展
+7. `members/bob/log/` 最新一份
+8. `members/bob/inbox/` — 待处理协作件
+
+## 二、产出位置
+- 起草：`members/bob/drafts/&lt;主题&gt;-draft-vN.md`
+- 生效：`members/bob/effective/&lt;主题&gt;.md`（仅人确认后）
+- 历史归档：`members/bob/history/&lt;主题&gt;/&lt;日期&gt;_vN.md`
+- 状态更新：`members/bob/status.md`
+- 日志：`members/bob/log/YYYY-MM-DD.md`
+- 跨区投递：`members/&lt;对方&gt;/inbox/`
+
+## 三、bob 专属职责
+- 文生氛围图Skill：AIGC生图技能设计，定目标→立规矩→守规矩方法论
+- 素材视觉标准：色调、构图、字号、风格定义
+- AIGC生图prompt模板设计：主题词 + 风格描述 + 构图指令
+- 与 alice 协作：素材视觉标准在产品动线中的呈现
+- 与 carol 协作：生图Skill与后端Pipeline的接口
+
+## 四、工作边界（铁律）
+1. 不得在人确认前让 drafts/ 生效
+2. 不得改 members/alice|carol|dave/ 下任何文件
+3. 不得改 public/consensus/ 下任何文件（维护人是 alice）；可改 public/contract/division.md（bob 维护）
+4. 拿不准记入 `members/bob/drafts/pending-questions.md`
+5. 起草前先 grep `effective/`
+
+## 五、遇到需要拍板的问题
+1. 追加到 `members/bob/drafts/pending-questions.md`
+2. 需他人拍板则投对方 inbox：`YYYY-MM-DD-bob-&lt;事由&gt;.md`
+3. status.md 标记&#34;待 &lt;某人&gt; 确认&#34;
+4. 未答复前相关草稿不得提请生效
+
+## 六、每次工作收尾
+1. 更新 `members/bob/status.md`
+2. 写 `members/bob/log/YYYY-MM-DD.md`
+3. 以 bob 身份 git commit + push
+4. commit message：`&lt;动作&gt;: &lt;事项&gt; — &lt;结果&gt;`
+</pre>
+  </div>
+</div>
+
+<div class="grid-4" style="margin-top:16px">
+  <div class="card">
+    <h3>📥 收件箱 <span class="stat">1</span></h3>
+    <ul class="file-list">
+      
+      <li><a href="#file-members__bob__inbox__2026-08-31-alice-今日宜素材图标准确认.md">2026-08-31-alice-今日宜素材图标准确认.md</a></li>
+      
+    </ul>
+    
+  </div>
+  <div class="card">
+    <h3>📝 草稿 <span class="stat">0</span></h3>
+    <ul class="file-list">
+      
+    </ul>
+    <p class="empty">空</p>
+  </div>
+  <div class="card">
+    <h3>✅ 生效版本 <span class="stat">0</span></h3>
+    <ul class="file-list">
+      
+    </ul>
+    <p class="empty">空</p>
+  </div>
+  <div class="card">
+    <h3>📦 历史 <span class="stat">0</span></h3>
+    <ul class="file-list">
+      
+    </ul>
+    <p class="empty">空</p>
+  </div>
+</div>
+
+<h3>日志</h3>
+<div class="card">
+  <ul class="file-list">
+    
+    <li><a href="#file-members__bob__log__2026-08-31.md">2026-08-31.md</a></li>
+    
+  </ul>
+  
+</div>
+
+</section>
+<section class="view" id="view-member-carol" style="display:none">
+  
+<a href="#view-index" class="back">← 返回区域地图</a>
+<h2>carol <span class="badge badge-blue">carol@platform.jd</span></h2>
+<p style="color:var(--muted);margin-bottom:16px">服务端&amp;后台开发 · AIGC Pipeline与数据看板</p>
+
+<div class="grid">
+  <div class="card">
+    <h3>📌 状态记录</h3>
+    <pre># carol 状态记录
+
+## 当前进展
+- 2026-08-31 工作台初始化 已生效
+- 已回复AIGC后台模块流转方案确认
+
+## 生效版本清单
+（暂无）
+
+## 待确认事项
+（暂无）
+</pre>
+  </div>
+  <div class="card">
+    <h3>🤖 AI 工作规程</h3>
+    <pre># carol 工作规程（AI 读取）
+
+&gt; 角色：服务端&amp;后台开发。职责：AIGC Pipeline后端开发、B端搜索产运后台开发、今日宜数据看板开发。
+
+## 一、开始工作前必读（按顺序）
+1. `public/consensus/project-scope.md`
+2. `public/consensus/rules.md`
+3. `public/consensus/glossary.md`
+4. `public/contract/division.md`
+5. `public/contract/protocol.md`（carol 维护此文件）
+6. `members/carol/status.md`
+7. `members/carol/log/` 最新一份
+8. `members/carol/inbox/`
+
+## 二、产出位置
+- 起草：`members/carol/drafts/&lt;主题&gt;-draft-vN.md`
+- 生效：`members/carol/effective/&lt;主题&gt;.md`
+- 历史归档：`members/carol/history/&lt;主题&gt;/&lt;日期&gt;_vN.md`
+- 状态更新：`members/carol/status.md`
+- 日志：`members/carol/log/YYYY-MM-DD.md`
+- 跨区投递：`members/&lt;对方&gt;/inbox/`
+
+## 三、carol 专属职责
+- AIGC Pipeline后端：供给-审核-配置-C端的模块流转逻辑
+- B端搜索产运后台：今日宜配置管理、主题词管理
+- 数据看板：PV/CTR/留存率等指标的数据采集与展示
+- 模块流转状态机：生成中→待审核→审核通过/打回→已配置→已上线
+- 与 alice 协作：AIGC后台模块流转方案、后台开发需求
+- 与 bob 协作：生图Skill与后端Pipeline的接口
+- 与 dave 协作：Pipeline产出与质量验收的衔接
+
+## 四、工作边界（铁律）
+1. 不得在人确认前让 drafts/ 生效
+2. 不得改 members/alice|bob|dave/ 下任何文件
+3. 不得改 public/consensus/（维护人是 alice）；可改 public/contract/protocol.md（carol 维护）
+4. 拿不准记入 `members/carol/drafts/pending-questions.md`
+5. 起草前先 grep `effective/`
+
+## 五、遇到需要拍板的问题
+1. 追加 `members/carol/drafts/pending-questions.md`
+2. 需他人拍板投对方 inbox：`YYYY-MM-DD-carol-&lt;事由&gt;.md`
+3. status.md 标记&#34;待确认&#34;
+4. 未答复前相关草稿不得提请生效
+
+## 六、每次工作收尾
+1. 更新 `members/carol/status.md`
+2. 写 `members/carol/log/YYYY-MM-DD.md`
+3. 以 carol 身份 git commit + push
+4. commit message：`&lt;动作&gt;: &lt;事项&gt; — &lt;结果&gt;`
+</pre>
+  </div>
+</div>
+
+<div class="grid-4" style="margin-top:16px">
+  <div class="card">
+    <h3>📥 收件箱 <span class="stat">1</span></h3>
+    <ul class="file-list">
+      
+      <li><a href="#file-members__carol__inbox__2026-08-31-alice-AIGC后台模块流转方案确认.md">2026-08-31-alice-AIGC后台模块流转方案确认.md</a></li>
+      
+    </ul>
+    
+  </div>
+  <div class="card">
+    <h3>📝 草稿 <span class="stat">0</span></h3>
+    <ul class="file-list">
+      
+    </ul>
+    <p class="empty">空</p>
+  </div>
+  <div class="card">
+    <h3>✅ 生效版本 <span class="stat">0</span></h3>
+    <ul class="file-list">
+      
+    </ul>
+    <p class="empty">空</p>
+  </div>
+  <div class="card">
+    <h3>📦 历史 <span class="stat">0</span></h3>
+    <ul class="file-list">
+      
+    </ul>
+    <p class="empty">空</p>
+  </div>
+</div>
+
+<h3>日志</h3>
+<div class="card">
+  <ul class="file-list">
+    
+    <li><a href="#file-members__carol__log__2026-08-31.md">2026-08-31.md</a></li>
+    
+  </ul>
+  
+</div>
+
+</section>
+<section class="view" id="view-member-dave" style="display:none">
+  
+<a href="#view-index" class="back">← 返回区域地图</a>
+<h2>dave <span class="badge badge-blue">dave@paipai.jd</span></h2>
+<p style="color:var(--muted);margin-bottom:16px">质量 · 素材审核与Pipeline产出验收</p>
+
+<div class="grid">
+  <div class="card">
+    <h3>📌 状态记录</h3>
+    <pre># dave 状态记录
+
+## 当前进展
+- 2026-08-31 工作台初始化 已生效
+
+## 生效版本清单
+（暂无）
+
+## 待确认事项
+（暂无）
+</pre>
+  </div>
+  <div class="card">
+    <h3>🤖 AI 工作规程</h3>
+    <pre># dave 工作规程（AI 读取）
+
+&gt; 角色：质量。职责：素材审核标准、质量把关、AIGC Pipeline产出验收。
+
+## 一、开始工作前必读（按顺序）
+1. `public/consensus/project-scope.md`
+2. `public/consensus/rules.md`
+3. `public/consensus/glossary.md`
+4. `public/contract/division.md`
+5. `public/contract/protocol.md`
+6. `members/dave/status.md`
+7. `members/dave/log/` 最新一份
+8. `members/dave/inbox/`
+
+## 二、产出位置
+- 起草：`members/dave/drafts/&lt;主题&gt;-draft-vN.md`
+- 生效：`members/dave/effective/&lt;主题&gt;.md`
+- 历史归档：`members/dave/history/&lt;主题&gt;/&lt;日期&gt;_vN.md`
+- 状态更新：`members/dave/status.md`
+- 日志：`members/dave/log/YYYY-MM-DD.md`
+- 跨区投递：`members/&lt;对方&gt;/inbox/`
+
+## 三、dave 专属职责
+- 素材审核标准：AIGC生成素材的质量判定规则（清晰度、主题相关性、合规性）
+- 质量把关：审核流程的设计与执行
+- Pipeline产出验收：AIGC产出的整体质量评估
+- 与 alice 协作：素材产出验收标准
+- 与 bob 协作：视觉标准与审核标准的对齐
+- 与 carol 协作：Pipeline产出与质量验收的衔接
+
+## 四、工作边界（铁律）
+1. 不得在人确认前让 drafts/ 生效
+2. 不得改 members/alice|bob|carol/ 下任何文件
+3. 不得改 public/consensus/；dave 不维护公共区文件，需改时向对应维护人提出
+4. 拿不准记入 `members/dave/drafts/pending-questions.md`
+5. 起草前先 grep `effective/`
+
+## 五、遇到需要拍板的问题
+1. 追加 `members/dave/drafts/pending-questions.md`
+2. 需他人拍板投对方 inbox：`YYYY-MM-DD-dave-&lt;事由&gt;.md`
+3. status.md 标记&#34;待确认&#34;
+4. 未答复前相关草稿不得提请生效
+
+## 六、每次工作收尾
+1. 更新 `members/dave/status.md`
+2. 写 `members/dave/log/YYYY-MM-DD.md`
+3. 以 dave 身份 git commit + push
+4. commit message：`&lt;动作&gt;: &lt;事项&gt; — &lt;结果&gt;`
+</pre>
+  </div>
+</div>
+
+<div class="grid-4" style="margin-top:16px">
+  <div class="card">
+    <h3>📥 收件箱 <span class="stat">0</span></h3>
+    <ul class="file-list">
+      
+    </ul>
+    <p class="empty">空</p>
+  </div>
+  <div class="card">
+    <h3>📝 草稿 <span class="stat">0</span></h3>
+    <ul class="file-list">
+      
+    </ul>
+    <p class="empty">空</p>
+  </div>
+  <div class="card">
+    <h3>✅ 生效版本 <span class="stat">0</span></h3>
+    <ul class="file-list">
+      
+    </ul>
+    <p class="empty">空</p>
+  </div>
+  <div class="card">
+    <h3>📦 历史 <span class="stat">0</span></h3>
+    <ul class="file-list">
+      
+    </ul>
+    <p class="empty">空</p>
+  </div>
+</div>
+
+<h3>日志</h3>
+<div class="card">
+  <ul class="file-list">
+    
+  </ul>
+  <p class="empty">暂无日志</p>
+</div>
+
+</section>
+<section class="view" id="file-.githooks__pre-commit" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>pre-commit</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">.githooks/pre-commit</p>
+<div class="card">
+  <pre>#!/usr/bin/env bash
+# pre-commit: 工作台写入约束校验  v2.1
+# 规程依据: public/consensus/rules.md 第八条
+#
+# v1 问题: git diff --cached --name-only 对中文/空格/特殊字符文件名会
+#   加双引号包 + 八进制转义 (\350\220...)，read 拿到的字符串 startswith
+#   全部不匹配，silent pass（已复现：549d590 本应被拦却放行）。
+# v2 修: git diff --cached -z (NUL 分隔)，避免一切包装；解八进制兜底；
+#   加&#34;暂存区改动但解析为零&#34;的检查防 silent pass。
+# v2.1 修: macOS /bin/bash 的 set -u 把中文句号&#34;。&#34;视为变量名一部分，
+#   echo &#34;维护人: $m。他人...&#34; 会查找 ${m。} 然后 unbound variable。
+#   全部改用 printf 显式格式 + ${var} 大括号包住所有引用。
+set -u
+
+# ── 小工具：bash 下解八进制转义 ────────────────────────────
+_decode_octal_path() {
+  local s=&#34;$1&#34;
+  if [[ &#34;$s&#34; != *\\* ]]; then
+    printf &#39;%s&#39; &#34;$s&#34;
+    return
+  fi
+  # shellcheck disable=SC2059
+  printf &#39;%b&#39; &#34;$s&#34;
+}
+
+# 1. 识别当前提交者身份
+author_name=$(git config user.name)
+case &#34;${author_name}&#34; in
+  alice) me=&#34;alice&#34; ;;
+  bob)   me=&#34;bob&#34;   ;;
+  carol) me=&#34;carol&#34; ;;
+  dave)  me=&#34;dave&#34;  ;;
+  *)
+    printf &#39;ERROR: 未知身份 &#34;%s&#34;。请用 alice/bob/carol/dave 之一。\n&#39; &#34;${author_name}&#34;
+    printf &#39;       在克隆内执行: git config user.name &lt;name&gt; &amp;&amp; git config user.email &lt;email&gt;\n&#39;
+    exit 1
+    ;;
+esac
+
+# 2. 公共区文件维护人映射
+maintainer_of() {
+  case &#34;$1&#34; in
+    public/consensus/project-scope.md) printf &#39;alice&#39; ;;
+    public/consensus/rules.md)         printf &#39;alice&#39; ;;
+    public/consensus/glossary.md)      printf &#39;alice&#39; ;;
+    public/contract/division.md)       printf &#39;bob&#39;   ;;
+    public/contract/protocol.md)       printf &#39;carol&#39; ;;
+    *) printf &#39;&#39; ;;
+  esac
+}
+
+errors=0
+parsed_count=0
+
+# 3. 遍历暂存区新增/修改/重命名的文件（-z NUL 分隔，无引号无转义包装）
+while IFS= read -r -d &#39;&#39; raw; do
+  raw=&#34;${raw#\&#34;}&#34;
+  raw=&#34;${raw%\&#34;}&#34;
+  file=$(_decode_octal_path &#34;$raw&#34;)
+  parsed_count=$((parsed_count+1))
+
+  # 3.1 成员区写入权限校验
+  if [[ &#34;$file&#34; == members/* ]]; then
+    member=$(printf &#39;%s&#39; &#34;$file&#34; | cut -d&#39;/&#39; -f2)
+    rest=$(printf &#39;%s&#39;   &#34;$file&#34; | cut -d&#39;/&#39; -f3-)
+
+    if [[ &#34;$member&#34; == &#34;${me}&#34; ]]; then
+      : # 本人成员区，放行
+    elif [[ &#34;$rest&#34; == inbox/* ]]; then
+      : # 他人收件箱，允许投递
+    else
+      printf &#39;ERROR: %s 不可改 members/%s/ 下非 inbox 文件:\n&#39; &#34;${me}&#34; &#34;${member}&#34;
+      printf &#39;       %s\n&#39; &#34;${file}&#34;
+      printf &#39;       规程: 跨区协作只投对方 inbox，不改对方区已有文件。\n&#39;
+      errors=$((errors+1))
+    fi
+    continue
+  fi
+
+  # 3.2 公共区维护人校验
+  if [[ &#34;$file&#34; == public/consensus/* ]] || [[ &#34;$file&#34; == public/contract/* ]]; then
+    m=$(maintainer_of &#34;$file&#34;)
+    if [[ -n &#34;${m}&#34; ]] &amp;&amp; [[ &#34;${m}&#34; != &#34;${me}&#34; ]]; then
+      printf &#39;ERROR: %s 不可改 %s\n&#39; &#34;${me}&#34; &#34;${file}&#34;
+      printf &#39;       维护人: %s — 他人修改须向维护人提出，由维护人确认后更新。\n&#39; &#34;${m}&#34;
+      errors=$((errors+1))
+    fi
+    continue
+  fi
+
+  # 3.3 其他路径（.githooks/ 等）放行
+done &lt; &lt;(git diff --cached -z --name-only --diff-filter=ACMR)
+
+# 3.4 防御：暂存区有改动但解析为 0 → 解析失败，拒绝放行
+staged_count=$(git diff --cached --name-only --diff-filter=ACMR 2&gt;/dev/null | wc -l | tr -d &#39; &#39;)
+if [[ -n &#34;${staged_count:-}&#34; ]] &amp;&amp; [[ &#34;${staged_count}&#34; -gt 0 ]] &amp;&amp; [[ &#34;${parsed_count}&#34; -eq 0 ]]; then
+  printf &#39;ERROR: pre-commit 无法解析暂存区内 %s 个文件的路径（可能是 git 版本差异/编码问题）。\n&#39; &#34;${staged_count}&#34;
+  printf &#39;       为避免越权写入，拒绝放行。请提交 plain ASCII 文件名重试，或联系工作台维护人检查 hook。\n&#39;
+  errors=$((errors+1))
+fi
+
+# 4. 结果
+if [[ &#34;${errors}&#34; -gt 0 ]]; then
+  printf &#39;\n&#39;
+  printf &#39;pre-commit 拦截 %s 处违规。依据 public/consensus/rules.md，请调整后重试。\n&#39; &#34;${errors}&#34;
+  printf &#39;若需绕过（仅搭建期），用: git commit --no-verify （不建议常规使用）\n&#39;
+  exit 1
+fi
+
+exit 0
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__alice__ai-procedure.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>ai-procedure.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/alice/ai-procedure.md</p>
+<div class="card">
+  <pre># alice 工作规程（AI 读取）
+
+&gt; 角色今日宜产品（本人）。职责：C端今日宜用户动线、产品框架和三层内容供给体系搭建；B端搜索产运后台和今日宜数据看板逻辑。
+
+## 一、开始工作前必读（按顺序）
+1. `public/consensus/project-scope.md` — 项目范围与三层内容供给体系
+2. `public/consensus/rules.md` — 规则口径（生效路径/区域权限/写入约束）
+3. `public/consensus/glossary.md` — 名词约定
+4. `public/contract/division.md` — 分工方案，确认本次协作涉及哪些人
+5. `public/contract/protocol.md` — 协作规则（投递格式/生效动作）
+6. `members/alice/status.md` — 当前进展与生效版本清单
+7. `members/alice/log/` 最新一份 — 上次工作到哪
+8. `members/alice/inbox/` — 有无待处理的协作件
+
+## 二、产出位置
+- 起草：`members/alice/drafts/&lt;主题&gt;-draft-vN.md`
+- 生效：`members/alice/effective/&lt;主题&gt;.md`（仅在人确认后操作）
+- 历史归档：`members/alice/history/&lt;主题&gt;/&lt;日期&gt;_vN.md`
+- 状态更新：`members/alice/status.md`
+- 日志：`members/alice/log/YYYY-MM-DD.md`
+- 跨区投递：投到 `members/&lt;对方&gt;/inbox/`
+
+## 三、alice 专属职责
+- 今日宜C端用户动线设计：前置页→搜索结果页→今日宜卡片的呈现
+- 三层内容供给体系：AIGC生成→审核→配置上线的框架
+- B端搜索产运后台：今日宜配置管理、主题词管理
+- 数据看板：PV/CTR/留存率等指标定义
+- 与 bob 协作：素材视觉标准在产品动线中的呈现
+- 与 carol 协作：AIGC Pipeline模块流转方案、后台开发需求
+- 与 dave 协作：素材产出验收标准
+
+## 四、工作边界（铁律）
+1. 不得在人确认前把 drafts/ 内容写入 effective/
+2. 不得改 members/bob|carol|dave/ 下任何文件；要协作就投对方 inbox
+3. 不得改 public/ 下非 alice 维护的文件
+4. 拿不准的问题，记入 `members/alice/drafts/pending-questions.md`，等人裁决
+5. 起草前先 grep `effective/`，确认是否已有同名生效版本
+
+## 五、遇到需要拍板的问题
+1. 在 `members/alice/drafts/pending-questions.md` 追加问题
+2. 若需他人拍板，投递到对方 inbox，文件名 `YYYY-MM-DD-alice-&lt;事由&gt;.md`
+3. 在 `members/alice/status.md` 标记&#34;待 &lt;某人&gt; 确认&#34;
+4. 问题未答复前，相关草稿不得提请生效
+
+## 六、每次工作收尾
+1. 更新 `members/alice/status.md` 当前进展
+2. 写 `members/alice/log/YYYY-MM-DD.md`（今日工作 + 提交记录）
+3. 以 alice 身份 git commit + push
+4. commit message 格式：`&lt;动作&gt;: &lt;事项&gt; — &lt;结果&gt;`，如 `draft: 今日宜素材图标准 v1 — 待 bob 确认视觉规范`
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__alice__drafts__今日宜素材图标准-draft-v1.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>今日宜素材图标准-draft-v1.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/alice/drafts/今日宜素材图标准-draft-v1.md</p>
+<div class="card">
+  <pre># 今日宜素材图标准 v1（草稿）
+
+## 素材图基本规范
+- 尺寸：750×400 px（搜索结果页卡片位）
+- 风格：与今日宜主题词强相关的氛围图，暖色调为主
+- 构图：上方氛围图占60%，下方文案区占40%
+- 文案：主题词 + 引导语（如&#34;今日宜 · 查收你的专属热点&#34;）
+
+## AIGC生成规范
+- 生图Skill：文生氛围图，按&#34;定目标→立规矩→守规矩&#34;方法论
+- prompt模板：主题词 + 风格描述 + 构图指令
+- 出图数量：每个主题词生成3张候选
+
+## 待 bob 确认
+素材图的视觉风格标准（色调、构图比例、文案字号）是否可行？建议用暖色氛围图 + 24px主题词文案。
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__alice__drafts__今日宜素材图标准-draft-v2.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>今日宜素材图标准-draft-v2.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/alice/drafts/今日宜素材图标准-draft-v2.md</p>
+<div class="card">
+  <pre>&gt; 版本：v1
+&gt; 生效日期：2026-08-31
+&gt; 经 bob 确认通过
+
+## v2 变更
+- &#34;未命中&#34;态文案：今日暂无推荐，明日继续（不置灰）
+- 新增配额条：已生成素材 X/Y 张进度展示
+
+# 今日宜素材图标准 v1（草稿）
+
+## 素材图基本规范
+- 尺寸：750×400 px（搜索结果页卡片位）
+- 风格：与今日宜主题词强相关的氛围图，暖色调为主
+- 构图：上方氛围图占60%，下方文案区占40%
+- 文案：主题词 + 引导语（如&#34;今日宜 · 查收你的专属热点&#34;）
+
+## AIGC生成规范
+- 生图Skill：文生氛围图，按&#34;定目标→立规矩→守规矩&#34;方法论
+- prompt模板：主题词 + 风格描述 + 构图指令
+- 出图数量：每个主题词生成3张候选
+
+## 待 bob 确认
+素材图的视觉风格标准（色调、构图比例、文案字号）是否可行？建议用暖色氛围图 + 24px主题词文案。
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__alice__effective__今日宜素材图标准.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>今日宜素材图标准.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/alice/effective/今日宜素材图标准.md</p>
+<div class="card">
+  <pre>&gt; 版本：v2
+&gt; 生效日期：2026-08-31
+&gt; 经 bob 确认通过
+
+# 今日宜素材图标准
+
+## 素材图基本规范
+- 尺寸：750×400 px（搜索结果页卡片位）
+- 风格：与今日宜主题词强相关的氛围图，暖色调为主
+- 构图：上方氛围图占60%，下方文案区占40%
+- 文案：主题词 + 引导语（如&#34;今日宜 · 查收你的专属热点&#34;）
+
+## AIGC生成规范
+- 生图Skill：文生氛围图，按&#34;定目标→立规矩→守规矩&#34;方法论
+- prompt模板：主题词 + 风格描述 + 构图指令
+- 出图数量：每个主题词生成3张候选
+
+## v2 变更
+- &#34;未命中&#34;态文案：今日暂无推荐，明日继续（不置灰）
+- 新增配额条：已生成素材 X/Y 张进度展示
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__alice__history__今日宜素材图标准__2026-08-31_v1.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>2026-08-31_v1.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/alice/history/今日宜素材图标准/2026-08-31_v1.md</p>
+<div class="card">
+  <pre>&gt; 版本：v1
+&gt; 生效日期：2026-08-31
+&gt; 经 bob 确认通过
+
+# 今日宜素材图标准 v1
+
+## 素材图基本规范
+- 尺寸：750×400 px（搜索结果页卡片位）
+- 风格：与今日宜主题词强相关的氛围图，暖色调为主
+- 构图：上方氛围图占60%，下方文案区占40%
+- 文案：主题词 + 引导语（如&#34;今日宜 · 查收你的专属热点&#34;）
+
+## AIGC生成规范
+- 生图Skill：文生氛围图，按&#34;定目标→立规矩→守规矩&#34;方法论
+- prompt模板：主题词 + 风格描述 + 构图指令
+- 出图数量：每个主题词生成3张候选
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__alice__inbox__2026-08-31-bob-今日宜素材图标准答复.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>2026-08-31-bob-今日宜素材图标准答复.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/alice/inbox/2026-08-31-bob-今日宜素材图标准答复.md</p>
+<div class="card">
+  <pre># 今日宜素材图标准答复
+
+## 确认结果
+通过。素材图视觉风格标准可行，暖色氛围图 + 24px主题词文案。
+
+## 补充
+&#34;未命中&#34;态建议用文案&#34;今日暂无推荐，明日继续&#34;，不置灰，保持用户期待感。
+配额满后增加&#34;已生成素材 X/Y 张&#34;进度条，只出数量不出百分比。
+
+## 答复写回
+本答复即确认。alice 可将草稿生效。
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__alice__inbox__2026-08-31-carol-AIGC后台模块流转答复.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>2026-08-31-carol-AIGC后台模块流转答复.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/alice/inbox/2026-08-31-carol-AIGC后台模块流转答复.md</p>
+<div class="card">
+  <pre># AIGC后台模块流转答复
+
+## 确认结果
+模块流转以状态触发，确认。后台按预设状态机下发模块流转信号。
+
+## 补充
+素材队列满的情况：AIGC生成提前结束，但审核仍按批次执行。
+C端卡片回显建议：
+- 队列满 → 进度条 100% + &#34;素材生成中，等待审核&#34;
+- 审核完成 → 自动配置上线（仅审核通过的素材进入C端）
+
+模块流转状态由后台下发，C端只读渲染，不自行判断。
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__alice__log__2026-08-31.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>2026-08-31.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/alice/log/2026-08-31.md</p>
+<div class="card">
+  <pre># alice 2026-08-31 日志
+
+## 今日工作
+- 起草 今日宜素材图标准 v1
+- 投递确认请求到 bob 收件箱（素材视觉规范确认）
+- 今日宜素材图标准 v1 经 bob 确认，生效
+- 今日宜素材图标准 v2
+- 投递确认请求到 carol 收件箱（AIGC后台模块流转方案）
+
+## 提交记录
+- （待填）
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__alice__status.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>status.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/alice/status.md</p>
+<div class="card">
+  <pre># alice 状态记录
+
+## 当前进展
+- 2026-08-31 工作台初始化 已生效
+- 2026-08-31 今日宜素材图标准 v1 草稿完成，待 bob 确认视觉规范
+- 2026-08-31 今日宜素材图标准 v1 已生效（经 bob 确认）
+- 2026-08-31 今日宜素材图标准 v2 已生效（旧版 v1 已归档至 history）
+
+## 生效版本清单
+- 今日宜素材图标准.md | 2026-08-31 | v2
+
+## 待确认事项
+（暂无）
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__bob__ai-procedure.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>ai-procedure.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/bob/ai-procedure.md</p>
+<div class="card">
+  <pre># bob 工作规程（AI 读取）
+
+&gt; 角色：设计。职责：文生氛围图Skill设计、素材视觉标准、AIGC生图方法论（定目标→立规矩→守规矩）。
+
+## 一、开始工作前必读（按顺序）
+1. `public/consensus/project-scope.md` — 项目范围与三层内容供给体系
+2. `public/consensus/rules.md` — 规则口径
+3. `public/consensus/glossary.md` — 名词约定
+4. `public/contract/division.md` — 分工方案（bob 维护此文件）
+5. `public/contract/protocol.md` — 协作规则
+6. `members/bob/status.md` — 当前进展
+7. `members/bob/log/` 最新一份
+8. `members/bob/inbox/` — 待处理协作件
+
+## 二、产出位置
+- 起草：`members/bob/drafts/&lt;主题&gt;-draft-vN.md`
+- 生效：`members/bob/effective/&lt;主题&gt;.md`（仅人确认后）
+- 历史归档：`members/bob/history/&lt;主题&gt;/&lt;日期&gt;_vN.md`
+- 状态更新：`members/bob/status.md`
+- 日志：`members/bob/log/YYYY-MM-DD.md`
+- 跨区投递：`members/&lt;对方&gt;/inbox/`
+
+## 三、bob 专属职责
+- 文生氛围图Skill：AIGC生图技能设计，定目标→立规矩→守规矩方法论
+- 素材视觉标准：色调、构图、字号、风格定义
+- AIGC生图prompt模板设计：主题词 + 风格描述 + 构图指令
+- 与 alice 协作：素材视觉标准在产品动线中的呈现
+- 与 carol 协作：生图Skill与后端Pipeline的接口
+
+## 四、工作边界（铁律）
+1. 不得在人确认前让 drafts/ 生效
+2. 不得改 members/alice|carol|dave/ 下任何文件
+3. 不得改 public/consensus/ 下任何文件（维护人是 alice）；可改 public/contract/division.md（bob 维护）
+4. 拿不准记入 `members/bob/drafts/pending-questions.md`
+5. 起草前先 grep `effective/`
+
+## 五、遇到需要拍板的问题
+1. 追加到 `members/bob/drafts/pending-questions.md`
+2. 需他人拍板则投对方 inbox：`YYYY-MM-DD-bob-&lt;事由&gt;.md`
+3. status.md 标记&#34;待 &lt;某人&gt; 确认&#34;
+4. 未答复前相关草稿不得提请生效
+
+## 六、每次工作收尾
+1. 更新 `members/bob/status.md`
+2. 写 `members/bob/log/YYYY-MM-DD.md`
+3. 以 bob 身份 git commit + push
+4. commit message：`&lt;动作&gt;: &lt;事项&gt; — &lt;结果&gt;`
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__bob__inbox__2026-08-31-alice-今日宜素材图标准确认.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>2026-08-31-alice-今日宜素材图标准确认.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/bob/inbox/2026-08-31-alice-今日宜素材图标准确认.md</p>
+<div class="card">
+  <pre># 今日宜素材图标准确认
+
+## 需要确认什么
+素材图视觉风格标准（色调、构图比例、文案字号）在今日宜卡片中的呈现方式。
+我建议用暖色氛围图 + 24px主题词文案，请确认是否可行。
+
+## 建议口径
+暖色调氛围图，上方60%图+下方40%文案，主题词24px加粗。
+
+## 确认后写回哪里
+答复请投 members/alice/inbox/2026-08-31-bob-今日宜素材图标准答复.md
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__bob__log__2026-08-31.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>2026-08-31.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/bob/log/2026-08-31.md</p>
+<div class="card">
+  <pre># bob 2026-08-31 日志
+
+## 今日工作
+- 答复 alice 今日宜素材图标准确认：通过，补充未命中态文案与配额条建议
+
+## 提交记录
+- （待填）
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__bob__status.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>status.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/bob/status.md</p>
+<div class="card">
+  <pre># bob 状态记录
+
+## 当前进展
+- 2026-08-31 工作台初始化 已生效
+- 2026-08-31 已答复 alice 今日宜素材图标准：通过
+
+## 生效版本清单
+（暂无）
+
+## 待确认事项
+（暂无）
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__carol__ai-procedure.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>ai-procedure.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/carol/ai-procedure.md</p>
+<div class="card">
+  <pre># carol 工作规程（AI 读取）
+
+&gt; 角色：服务端&amp;后台开发。职责：AIGC Pipeline后端开发、B端搜索产运后台开发、今日宜数据看板开发。
+
+## 一、开始工作前必读（按顺序）
+1. `public/consensus/project-scope.md`
+2. `public/consensus/rules.md`
+3. `public/consensus/glossary.md`
+4. `public/contract/division.md`
+5. `public/contract/protocol.md`（carol 维护此文件）
+6. `members/carol/status.md`
+7. `members/carol/log/` 最新一份
+8. `members/carol/inbox/`
+
+## 二、产出位置
+- 起草：`members/carol/drafts/&lt;主题&gt;-draft-vN.md`
+- 生效：`members/carol/effective/&lt;主题&gt;.md`
+- 历史归档：`members/carol/history/&lt;主题&gt;/&lt;日期&gt;_vN.md`
+- 状态更新：`members/carol/status.md`
+- 日志：`members/carol/log/YYYY-MM-DD.md`
+- 跨区投递：`members/&lt;对方&gt;/inbox/`
+
+## 三、carol 专属职责
+- AIGC Pipeline后端：供给-审核-配置-C端的模块流转逻辑
+- B端搜索产运后台：今日宜配置管理、主题词管理
+- 数据看板：PV/CTR/留存率等指标的数据采集与展示
+- 模块流转状态机：生成中→待审核→审核通过/打回→已配置→已上线
+- 与 alice 协作：AIGC后台模块流转方案、后台开发需求
+- 与 bob 协作：生图Skill与后端Pipeline的接口
+- 与 dave 协作：Pipeline产出与质量验收的衔接
+
+## 四、工作边界（铁律）
+1. 不得在人确认前让 drafts/ 生效
+2. 不得改 members/alice|bob|dave/ 下任何文件
+3. 不得改 public/consensus/（维护人是 alice）；可改 public/contract/protocol.md（carol 维护）
+4. 拿不准记入 `members/carol/drafts/pending-questions.md`
+5. 起草前先 grep `effective/`
+
+## 五、遇到需要拍板的问题
+1. 追加 `members/carol/drafts/pending-questions.md`
+2. 需他人拍板投对方 inbox：`YYYY-MM-DD-carol-&lt;事由&gt;.md`
+3. status.md 标记&#34;待确认&#34;
+4. 未答复前相关草稿不得提请生效
+
+## 六、每次工作收尾
+1. 更新 `members/carol/status.md`
+2. 写 `members/carol/log/YYYY-MM-DD.md`
+3. 以 carol 身份 git commit + push
+4. commit message：`&lt;动作&gt;: &lt;事项&gt; — &lt;结果&gt;`
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__carol__inbox__2026-08-31-alice-AIGC后台模块流转方案确认.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>2026-08-31-alice-AIGC后台模块流转方案确认.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/carol/inbox/2026-08-31-alice-AIGC后台模块流转方案确认.md</p>
+<div class="card">
+  <pre># AIGC后台模块流转方案确认
+
+## 需要确认什么
+AIGC Pipeline从「生成模块」切到「审核模块」的触发条件。
+我的理解：AIGC生成完成后即自动流转到审核队列，与人工干预无关。请确认。
+
+另外：素材队列满后生成提前结束，此时后台如何回显？
+建议：进度条显示100%，文案&#34;素材生成中，等待审核&#34;。
+
+## 建议口径
+- 模块流转以状态触发，由后台状态机下发流转信号
+- 队列满：进度条100% + &#34;素材生成中&#34;文案，审核通过后配置上线
+
+## 确认后写回哪里
+答复请投 members/alice/inbox/2026-08-31-carol-AIGC后台模块流转答复.md
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__carol__log__2026-08-31.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>2026-08-31.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/carol/log/2026-08-31.md</p>
+<div class="card">
+  <pre># carol 2026-08-31 日志
+
+## 今日工作
+- 确认AIGC后台模块流转方案
+
+## 提交记录
+- （待填）
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__carol__status.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>status.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/carol/status.md</p>
+<div class="card">
+  <pre># carol 状态记录
+
+## 当前进展
+- 2026-08-31 工作台初始化 已生效
+- 已回复AIGC后台模块流转方案确认
+
+## 生效版本清单
+（暂无）
+
+## 待确认事项
+（暂无）
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__dave__ai-procedure.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>ai-procedure.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/dave/ai-procedure.md</p>
+<div class="card">
+  <pre># dave 工作规程（AI 读取）
+
+&gt; 角色：质量。职责：素材审核标准、质量把关、AIGC Pipeline产出验收。
+
+## 一、开始工作前必读（按顺序）
+1. `public/consensus/project-scope.md`
+2. `public/consensus/rules.md`
+3. `public/consensus/glossary.md`
+4. `public/contract/division.md`
+5. `public/contract/protocol.md`
+6. `members/dave/status.md`
+7. `members/dave/log/` 最新一份
+8. `members/dave/inbox/`
+
+## 二、产出位置
+- 起草：`members/dave/drafts/&lt;主题&gt;-draft-vN.md`
+- 生效：`members/dave/effective/&lt;主题&gt;.md`
+- 历史归档：`members/dave/history/&lt;主题&gt;/&lt;日期&gt;_vN.md`
+- 状态更新：`members/dave/status.md`
+- 日志：`members/dave/log/YYYY-MM-DD.md`
+- 跨区投递：`members/&lt;对方&gt;/inbox/`
+
+## 三、dave 专属职责
+- 素材审核标准：AIGC生成素材的质量判定规则（清晰度、主题相关性、合规性）
+- 质量把关：审核流程的设计与执行
+- Pipeline产出验收：AIGC产出的整体质量评估
+- 与 alice 协作：素材产出验收标准
+- 与 bob 协作：视觉标准与审核标准的对齐
+- 与 carol 协作：Pipeline产出与质量验收的衔接
+
+## 四、工作边界（铁律）
+1. 不得在人确认前让 drafts/ 生效
+2. 不得改 members/alice|bob|carol/ 下任何文件
+3. 不得改 public/consensus/；dave 不维护公共区文件，需改时向对应维护人提出
+4. 拿不准记入 `members/dave/drafts/pending-questions.md`
+5. 起草前先 grep `effective/`
+
+## 五、遇到需要拍板的问题
+1. 追加 `members/dave/drafts/pending-questions.md`
+2. 需他人拍板投对方 inbox：`YYYY-MM-DD-dave-&lt;事由&gt;.md`
+3. status.md 标记&#34;待确认&#34;
+4. 未答复前相关草稿不得提请生效
+
+## 六、每次工作收尾
+1. 更新 `members/dave/status.md`
+2. 写 `members/dave/log/YYYY-MM-DD.md`
+3. 以 dave 身份 git commit + push
+4. commit message：`&lt;动作&gt;: &lt;事项&gt; — &lt;结果&gt;`
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-members__dave__status.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>status.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">members/dave/status.md</p>
+<div class="card">
+  <pre># dave 状态记录
+
+## 当前进展
+- 2026-08-31 工作台初始化 已生效
+
+## 生效版本清单
+（暂无）
+
+## 待确认事项
+（暂无）
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-public__consensus__glossary.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>glossary.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">public/consensus/glossary.md</p>
+<div class="card">
+  <pre># 名词约定
+
+&gt; 维护人：alice（今日宜产品）
+&gt; 他人修改须向维护人提出，由维护人确认后更新。
+
+## 业务名词
+| 名词 | 含义 |
+|---|---|
+| 今日宜 | 支付宝搜索结果页经典热点卡，留存率为搜索大盘平均的1.37倍 |
+| AIGC Pipeline | 今日宜素材自动化生产流水线，闭环供给-审核-配置-C端 |
+| 文生氛围图Skill | 设计侧沉淀的AIGC生图技能，定目标→立规矩→守规矩方法论 |
+| 素材图标准 | 今日宜素材图的尺寸、风格、构图规范 |
+| 三层内容供给 | C端用户动线的三层内容供给体系：AIGC生成→审核→配置上线 |
+| 搜索产运后台 | B端后台，管理今日宜配置与数据 |
+| 数据看板 | 今日宜数据看板，PV/CTR/留存等指标 |
+| 日更 | 今日宜每日更新素材的节奏 |
+| 前置页 | 今日宜搜索结果页前的入口页 |
+| PVCTR | 今日宜卡片的点击率 |
+| 留存率 | 用户后续回访搜索的比例 |
+| 主题词 | 今日宜搜索主题关键词 |
+| VibeCoding | 用自然语言编排AIGC Agent的编程范式 |
+
+## 工作台名词
+| 名词 | 含义 |
+|---|---|
+| 公共区 | 全员共享的区域，放项目共识文件与协作契约 |
+| 成员区 | 每人一块的个人工作区，区内文件只有本人写入 |
+| 收件箱 | 成员区对外的唯一入口，承接跨区投递 |
+| 草稿 | 成员区 drafts 目录下的文件，未确认前不生效 |
+| 生效版本 | 经人确认后的正式口径，全空间唯一 |
+| 历史版本 | 被替换的旧版原样存档，只增不删 |
+| 状态记录 | status.md，当前进展的唯一维护位置 |
+| 当天日志 | log/YYYY-MM-DD.md，过程的唯一维护位置 |
+| 工作规程 | ai-procedure.md，写明 AI 读取顺序/产出位置/拍板记录位置 |
+| 投递件 | 投进对方收件箱的协作文件，须含三要素 |
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-public__consensus__project-scope.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>project-scope.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">public/consensus/project-scope.md</p>
+<div class="card">
+  <pre># 项目范围
+
+&gt; 维护人：alice（今日宜产品）
+&gt; 他人修改须向维护人提出，由维护人确认后更新。
+
+## 项目名称
+今日宜 AIGC 复活项目 · 工作台
+
+## 业务背景
+今日宜是支付宝搜索结果页经典热点卡，留存率为搜索大盘平均的1.37倍，新沉流和超低活用户数发起搜索占比超60%。然而23年由于素材供给跟不上日更节奏导致下线，本项目旨在通过AIGC复活今日宜。
+- 标的：通过AIGC Pipeline实现今日宜素材日更自动化
+- 载体：支付宝APP 搜索结果页
+- 一期MVP版今日宜日均搜索PV达7k+，整卡PVCTR达34%
+
+## 两条业务收益主线
+1. **AIGC供给提效**：设计文生氛围图Skill，沉淀&#34;定目标→立规矩→守规矩&#34;生图方法论。完整VibeCoding今日宜素材自动化生产AIGC Agent，闭环供给-审核-配置-C端Pipeline，素材平均生产时间30min降至2min。
+2. **动线带增长**：今日宜前置页发起搜索率1.6%和7日留存率15.7%均低于搜索大盘。通过主题词透出、精准人群投放和服务挂载策略，最终前置页跳点率上涨+4pp，搜索PV+2w，留存率达37%。
+
+## 三层内容供给体系
+| 层级 | 说明 |
+|---|---|
+| AIGC生成 | 文生氛围图Skill按主题词自动生成候选素材 |
+| 人工审核 | 质量把关，审核通过的素材进入配置队列 |
+| C端配置上线 | 审核通过素材配置到搜索结果页今日宜卡片 |
+
+## 项目边界
+- 本工作台承载今日宜项目组日常协作：素材标准、AIGC Pipeline、审核流程、数据看板。
+- C端用户动线设计、素材图标准、AIGC Pipeline后端、B端搜索产运后台均为本工作台覆盖范围。
+- 放量节奏、AB实验配置等搜索产运保密数据不在本工作台公开区讨论。
+
+## 工作台定位
+- 载体：行云 git 仓库（本仓库）
+- 工作依据只认仓库里的文件，聊天记录与邮件不作为工作依据
+- AI NATIVE：空间建立时就把 AI 当作固定使用者，按空间里写明的规程工作
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-public__consensus__rules.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>rules.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">public/consensus/rules.md</p>
+<div class="card">
+  <pre># 规则口径
+
+&gt; 维护人：alice（今日宜产品）
+&gt; 他人修改须向维护人提出，由维护人确认后更新。
+
+## 一、工作依据
+1. 只认仓库里的文件，聊天记录与邮件不作为工作依据。
+2. 谁在什么时间改了什么，仓库历史里都能查到。
+
+## 二、区域与写入权限
+1. 公共区一块：放项目共识文件与协作契约。
+2. 成员区人手一块：区内文件只有本人写入。
+3. 公共区项目共识文件每份只有一个维护人，别人要改须向维护人提出。
+4. 成员产出需要全组共用的部分，经维护人确认后升入公共区。
+
+## 三、跨区协作
+1. 跨区协作只有一种动作：把要办的事写成一份新文件，投进对方收件箱。
+2. 投递件须写清三要素：需要对方确认什么、建议口径是什么、确认后写回哪里。
+3. 对方办结后归档，再投一份答复到发起人收件箱。
+4. 任何情况下不改对方区里已有的文件。
+
+## 四、生效路径
+1. 人指定任务目标与合格标准。
+2. AI 在成员区内起草（草稿反复修改，不对外生效）。
+3. 草稿完成后提请人确认：打回则继续改，通过才成为生效版本。
+4. 生效版本全空间唯一。替换前先把旧版原样存入历史版本，历史版本只增不删。
+5. 草稿不经人确认不生效；替换生效版本必须先归档旧版。
+
+## 五、信息维护
+1. 同一信息只在一个位置维护：当前进展看状态记录，正式口径看生效版本，过程看当天日志，其余位置只作引用。
+2. 一项工作是否生效，只看有没有经人确认的生效版本；文件夹与草稿的存在说明不了任何事。
+
+## 六、人机分工
+1. AI 承担：检索、起草、核对、归档、日志。
+2. 人只做三件事：指定目标、裁决分歧、验收产出。
+3. 人不必在文件夹之间手工找证据，AI 不得在人确认前让任何草稿生效。
+4. 工作规程写在空间里，AI 换一个会话、换一个模型，工作方式不变。
+
+## 七、日志与提交
+1. 每次工作收尾写当天日志。
+2. 每次工作完成一次 git 提交。
+3. 只看 git 提交历史，能还原每天做了什么。
+
+## 八、写入约束（pre-commit hook 强制）
+1. 提交作者身份须与所写成员区目录一致（alice 只能写 members/alice/）。
+2. 非维护人不可改公共区对应共识文件。
+3. 任何对他人成员区非 inbox 目录的改动一律拒绝。
+4. 中文/空格/特殊字符文件名同样受约束，若解析失败默认拒绝放行。
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-public__contract__division.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>division.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">public/contract/division.md</p>
+<div class="card">
+  <pre># 分工方案
+
+&gt; 协作契约：全员共同遵守。
+&gt; 改动需全员确认。
+
+## 成员与职责
+
+| 成员 | 角色 | 职责 | git 身份 | 维护的公共区文件 |
+|---|---|---|---|---|
+| alice | 今日宜产品（本人） | C端今日宜用户动线、产品框架和三层内容供给体系搭建；B端搜索产运后台和今日宜数据看板逻辑 | alice@plus.jd | project-scope / rules / glossary |
+| bob | 设计 | 文生氛围图Skill设计、素材视觉标准、AIGC生图方法论（定目标→立规矩→守规矩） | bob@plus.jd | division |
+| carol | 服务端&amp;后台开发 | AIGC Pipeline后端开发、B端搜索产运后台开发、今日宜数据看板开发 | carol@platform.jd | protocol |
+| dave | 质量 | 素材审核标准、质量把关、AIGC Pipeline产出验收 | dave@paipai.jd | — |
+
+## 协作关系
+- alice ↔ bob：产品框架与素材视觉标准的衔接（素材图标准如何在产品动线中呈现）
+- alice ↔ carol：产品需求与后台开发衔接（AIGC Pipeline模块流转、数据看板逻辑）
+- alice ↔ dave：产品验收与质量把关衔接（素材产出验收标准）
+- bob ↔ carol：AIGC生图Skill与后端Pipeline的衔接
+- carol ↔ dave：Pipeline产出与质量验收的衔接
+
+## 公共区文件维护人清单
+| 文件 | 维护人 |
+|---|---|
+| public/consensus/project-scope.md | alice |
+| public/consensus/rules.md | alice |
+| public/consensus/glossary.md | alice |
+| public/contract/division.md | bob |
+| public/contract/protocol.md | carol |
+</pre>
+</div>
+
+</section>
+<section class="view" id="file-public__contract__protocol.md" style="display:none">
+  
+<a href="#view-index" class="back">← 返回</a>
+<h2>protocol.md</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:16px">public/contract/protocol.md</p>
+<div class="card">
+  <pre># 协作规则
+
+&gt; 协作契约：全员共同遵守。
+&gt; 维护人：carol（服务端&amp;后台开发）。
+
+## 一、跨区投递格式
+
+投递件文件名：`YYYY-MM-DD-&lt;发起人&gt;-&lt;事由&gt;.md`，例如 `2026-08-31-alice-今日宜素材图标准确认.md`
+
+投递件须含三要素：
+```markdown
+# &lt;事由&gt;
+
+## 需要确认什么
+&lt;列出需要对方拍板的具体问题&gt;
+
+## 建议口径
+&lt;给出建议的处理方案&gt;
+
+## 确认后写回哪里
+&lt;写明对方确认后，答复应投回发起人收件箱的文件名&gt;
+```
+
+## 二、生效路径标准动作
+
+1. 起草：AI 在发起人 drafts/ 下起草，文件名 `&lt;主题&gt;-draft-vN.md`
+2. 提请确认：发起人把&#34;提请确认&#34;投进对方 inbox
+3. 对方确认：
+   - 通过 → 对方在自己的 effective/ 下不直接写（生效版本归发起人本人维护）；对方在 inbox 答复&#34;通过&#34;
+   - 打回 → 对方在 inbox 答复&#34;打回 + 修改意见&#34;
+4. 发起人生效：
+   - 把 drafts/ 草稿复制到 effective/（同名去 -draft 后缀）
+   - 若 effective/ 已有旧版，先把旧版原样复制到 history/&lt;主题&gt;/&lt;日期&gt;_vN.md
+   - 在 status.md 记录生效
+5. 归档：草稿可保留在 drafts/，或移入 history/（团队约定：保留在 drafts/，便于追溯）
+
+## 三、状态记录格式（status.md）
+
+```markdown
+# &lt;成员&gt; 状态记录
+
+## 当前进展
+- YYYY-MM-DD &lt;事项&gt; &lt;状态：进行中/待确认/已生效/已归档&gt;
+
+## 生效版本清单
+- &lt;文件名&gt; | 生效日期 | 版本
+```
+
+## 四、当天日志格式（log/YYYY-MM-DD.md）
+
+```markdown
+# &lt;成员&gt; YYYY-MM-DD 日志
+
+## 今日工作
+- &lt;事项&gt; &lt;动作&gt; &lt;结果&gt;
+
+## 提交记录
+- &lt;commit hash 前 7 位&gt; &lt;commit message&gt;
+```
+
+## 五、确认与签字
+
+人确认生效版本时，须在 status.md 写明：
+```
+- YYYY-MM-DD &lt;文件名&gt; 经 &lt;确认人&gt; 确认通过，生效
+```
+确认人签名即生效，无须额外流程。
+
+## 六、AI 上场触发方式
+
+1. 切换到对应成员克隆目录
+2. 调用 collab-workspace-agent skill
+3. AI 读 members/&lt;name&gt;/ai-procedure.md 后按规程工作
+4. AI 产出以该成员 git 身份提交
+5. 人验收产出，签字生效
+</pre>
+</div>
+
+</section>
+</div>
+<script>
+function showView(id){
+  var secs = document.querySelectorAll('section.view');
+  for (var i=0;i<secs.length;i++){ secs[i].style.display='none'; }
+  var el = document.getElementById(id);
+  if (!el){ id='view-index'; el=document.getElementById(id); }
+  el.style.display='block';
+  var links = document.querySelectorAll('#topnav a');
+  for (var j=0;j<links.length;j++){
+    links[j].className = (links[j].getAttribute('data-view')===id)?'active':'';
+  }
+  window.scrollTo(0,0);
+}
+function hashId(){
+  var h = location.hash.slice(1);
+  try { h = decodeURIComponent(h); } catch(e) {}
+  return h || 'view-index';
+}
+window.addEventListener('hashchange', function(){
+  showView(hashId());
+});
+document.addEventListener('DOMContentLoaded', function(){
+  showView(hashId());
+});
+</script>
+
+</body>
+</html>
